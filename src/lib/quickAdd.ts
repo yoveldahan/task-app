@@ -1,69 +1,49 @@
-import { parseQuickInput, type ParsedInput } from './parser';
-import { addProject, addTask, addTopic, getState } from './store';
-import { formatShortDate } from './dates';
+import type { ParsedInput } from './parser';
+import { getState, update } from './store';
 import { showToast } from './toast';
 import { notifyReminderSet } from './reminders';
+import { describeFields, describeResult, intake, type IntakeInput } from './intake';
 
-/** Human-readable summary of what the parser recognised, used for the live preview and the toast. */
+/** Live preview chips for the quick-capture bar. */
 export function describeParsed(p: ParsedInput): string[] {
-  const data = getState();
-  const parts: string[] = [];
-  const client = data.clients.find((c) => c.id === p.clientId);
-  const project = data.projects.find((x) => x.id === p.projectId);
-  const person = data.people.find((x) => x.id === p.personId);
-  parts.push(p.kind === 'topic' ? `🗓 נושא לישיבה (${formatShortDate(p.meetingDate!)})` : '✅ משימה');
-  if (client) parts.push(`👤 ${client.name}`);
-  if (project) parts.push(`📁 ${project.name}`);
-  if (p.newProjectName) parts.push(`📁 פרויקט חדש: ${p.newProjectName}`);
-  if (person) parts.push(`⏳ ${person.name}`);
-  if (p.dueDate) parts.push(`📆 ${formatShortDate(p.dueDate)}`);
-  if (p.reminderTime && p.reminderDate) parts.push(`🔔 ${formatShortDate(p.reminderDate)} ${p.reminderTime}`);
-  return parts;
+  return describeFields(p, getState());
 }
 
-/** Parses free text and creates a task or meeting topic. Returns what was created, or null for empty input. */
-export function quickAdd(raw: string): 'task' | 'topic' | null {
-  if (!raw.trim()) return null;
+/** Creates a task or meeting topic from text and/or structured fields. Returns what was created, or null for empty input. */
+export function quickAddInput(input: IntakeInput): 'task' | 'topic' | null {
+  if (!input.text.trim()) return null;
   const data = getState();
-  const p = parseQuickInput(raw, data);
-  const summary = describeParsed(p).join(' · ');
+  const r = intake(input, data);
+  const summary = describeResult(r, data).join(' · ');
 
-  if (p.kind === 'topic') {
-    const topic = addTopic({
-      topic: p.text,
-      meetingDate: p.meetingDate!,
-      clientId: p.clientId,
-      projectId: p.projectId,
-      withWhomId: p.personId ?? data.settings.meId,
-      reminderDate: p.reminderDate,
-      reminderTime: p.reminderTime,
+  update((d) => {
+    if (r.newProject) d.projects.push(r.newProject);
+    if (r.task) d.tasks.push(r.task);
+    if (r.topic) d.topics.push(r.topic);
+  });
+
+  const item = r.task ?? r.topic!;
+  if (item.reminderDate && item.reminderTime) {
+    notifyReminderSet({
+      id: item.id,
+      text: r.task ? r.task.description : r.topic!.topic,
+      clientId: item.clientId,
+      date: item.reminderDate,
+      time: item.reminderTime,
     });
-    if (topic.reminderDate && topic.reminderTime) {
-      notifyReminderSet({ id: topic.id, text: topic.topic, clientId: topic.clientId, date: topic.reminderDate, time: topic.reminderTime });
-    }
-    showToast(`נוסף לישיבה: ${summary}`, {
-      kind: 'success',
-      action: { label: 'לנושאים', onClick: () => (window.location.hash = '#meeting') },
-    });
-    return 'topic';
   }
 
-  const projectId = p.newProjectName && p.clientId ? addProject(p.clientId, p.newProjectName).id : p.projectId;
-  const task = addTask({
-    description: p.text,
-    clientId: p.clientId,
-    projectId,
-    stuckWithId: p.personId ?? data.settings.meId,
-    dueDate: p.dueDate,
-    reminderDate: p.reminderDate,
-    reminderTime: p.reminderTime,
+  const isTopic = r.kind === 'topic';
+  showToast(`${isTopic ? 'נוסף לישיבה' : 'נוספה'}: ${summary}${r.warnings.length ? ` ⚠️ ${r.warnings.join('; ')}` : ''}`, {
+    kind: r.warnings.length ? 'info' : 'success',
+    duration: r.warnings.length ? 8000 : 4000,
+    action: isTopic
+      ? { label: 'לנושאים', onClick: () => (window.location.hash = '#meeting') }
+      : { label: 'למשימות', onClick: () => (window.location.hash = '#tasks') },
   });
-  if (task.reminderDate && task.reminderTime) {
-    notifyReminderSet({ id: task.id, text: task.description, clientId: task.clientId, date: task.reminderDate, time: task.reminderTime });
-  }
-  showToast(`נוספה ${summary}`, {
-    kind: 'success',
-    action: { label: 'למשימות', onClick: () => (window.location.hash = '#tasks') },
-  });
-  return 'task';
+  return r.kind;
+}
+
+export function quickAdd(raw: string): 'task' | 'topic' | null {
+  return quickAddInput({ text: raw });
 }

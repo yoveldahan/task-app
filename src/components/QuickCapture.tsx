@@ -4,6 +4,7 @@ import { describeParsed, quickAdd } from '../lib/quickAdd';
 import { useData } from '../lib/store';
 import { showToast } from '../lib/toast';
 import { MEETING_PREFIX } from '../lib/constants';
+import { takePrefill } from '../lib/urlIntake';
 
 // Minimal typing for the (prefixed) Web Speech API.
 interface SpeechRecognitionLike {
@@ -24,7 +25,8 @@ function getRecognition(): (new () => SpeechRecognitionLike) | null {
 
 export function QuickCapture() {
   const data = useData();
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => takePrefill() ?? '');
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const baseRef = useRef('');
@@ -36,6 +38,11 @@ export function QuickCapture() {
   }, [text, data]);
 
   useEffect(() => () => recRef.current?.stop(), []);
+
+  // Arrived via a ?prefill=1 link: put the cursor in the box so it can be reviewed and sent.
+  useEffect(() => {
+    if (text) inputRef.current?.focus();
+  }, []);
 
   const submit = () => {
     if (quickAdd(text)) setText('');
@@ -81,6 +88,7 @@ export function QuickCapture() {
         }}
       >
         <textarea
+          ref={inputRef}
           className="qc-input"
           rows={1}
           value={text}

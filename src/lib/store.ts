@@ -1,9 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import type { AppData, Client, MeetingTopic, Project, Task } from './types';
-import { createSeedData, blankTask } from './seed';
+import { createSeedData, blankTask, blankTopic } from './seed';
 import { localStorageAdapter, normalizeData, postWebhook, type StorageAdapter } from './storage';
 import { newId } from './id';
-import { upcomingSunday } from './dates';
 import { STORAGE_KEY } from './constants';
 
 const adapter: StorageAdapter = localStorageAdapter;
@@ -192,23 +191,7 @@ export function deleteTask(id: string) {
 // ---------- Meeting topics ----------
 
 export function addTopic(partial: Partial<MeetingTopic>): MeetingTopic {
-  const topic: MeetingTopic = {
-    id: newId(),
-    meetingDate: upcomingSunday(),
-    topic: '',
-    clientId: null,
-    projectId: null,
-    withWhomId: state.settings.meId,
-    background: '',
-    discussed: false,
-    decision: '',
-    convertedTaskId: null,
-    reminderDate: null,
-    reminderTime: null,
-    reminderFiredFor: null,
-    createdAt: new Date().toISOString(),
-    ...partial,
-  };
+  const topic = blankTopic({ withWhomId: state.settings.meId, ...partial });
   update((d) => void d.topics.push(topic));
   return topic;
 }

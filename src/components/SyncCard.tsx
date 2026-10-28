@@ -80,6 +80,18 @@ export function SyncCard() {
         <p className="muted">
           מחובר כ-<b dir="ltr">{s.email}</b>. כל שינוי נשמר מיד במכשיר ומסונכרן ברקע לכל המכשירים המחוברים לאותו חשבון.
         </p>
+        {s.userId && (
+          <p className="muted">
+            מזהה משתמש (ל-Webhook): <code>{s.userId}</code>{' '}
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => navigator.clipboard.writeText(s.userId!).then(() => showToast('הועתק', { kind: 'success' }))}
+            >
+              העתק
+            </button>
+          </p>
+        )}
         <PreSyncBackup />
         <div className="toolbar-row">
           <button

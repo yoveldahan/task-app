@@ -20,6 +20,10 @@ export interface ParsedInput {
 // Accepts the spoken form too: dictation produces "נושא לישיבה" without a colon.
 const MEETING_PREFIX_RE = /^\s*נושא\s+ל?ישיבה\s*[:\-–,.]?\s*/;
 // Header of a message copied from WhatsApp: "[10:15, 28.10.2026] מתן: ..." – its time must not become a reminder.
+export function isMeetingText(s: string): boolean {
+  return MEETING_PREFIX_RE.test(s);
+}
+
 const WHATSAPP_HEADER_RE = /^\s*\[[^\]]*\d{1,2}[:.]\d{2}[^\]]*\]\s*[^:\n]{1,40}:\s*/;
 
 const BOUNDARY = `\\s,.;:!?()"'״׳\\-–/`;
@@ -58,7 +62,7 @@ export function nameKeywords(name: string): string[] {
 }
 
 // These values in the "stuck with" list are ordinary words, so they only count after "אצל".
-const GENERIC_PEOPLE = new Set(['לקוח', 'ספק', 'חיצוני', 'הנהלה']);
+export const GENERIC_PEOPLE = new Set(['לקוח', 'ספק', 'חיצוני', 'הנהלה']);
 
 interface Match {
   id: string;
@@ -66,7 +70,7 @@ interface Match {
   length: number;
 }
 
-function bestMatch(text: string, candidates: { id: string; keywords: string[] }[]): Match | null {
+export function bestMatch(text: string, candidates: { id: string; keywords: string[] }[]): Match | null {
   let best: Match | null = null;
   for (const c of candidates) {
     for (const k of c.keywords) {
@@ -101,7 +105,7 @@ function nextWeekday(weekday: number, now: Date): string {
   return toISODate(addDays(now, diff));
 }
 
-function roundToSlot(h: number, m: number): string {
+export function roundToSlot(h: number, m: number): string {
   const minutes = Math.min(Math.max(h * 60 + (m >= 30 ? 30 : 0), 8 * 60), 20 * 60);
   const slot = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
   return REMINDER_TIMES.includes(slot) ? slot : '09:00';

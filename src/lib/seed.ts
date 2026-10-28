@@ -1,4 +1,5 @@
-import type { AppData, Client, ClientCategory, Person, Project, Task } from './types';
+import type { AppData, Client, ClientCategory, MeetingTopic, Person, Project, Task } from './types';
+import { upcomingSunday } from './dates';
 import { newId } from './id';
 
 export const SEED_PEOPLE: Person[] = [
@@ -123,6 +124,25 @@ export function blankTask(partial: Partial<Task> & { stuckWithId: string }): Tas
     reminderFiredFor: null,
     createdAt: new Date().toISOString(),
     completedAt: null,
+    ...partial,
+  };
+}
+
+export function blankTopic(partial: Partial<MeetingTopic> & { withWhomId: string }): MeetingTopic {
+  return {
+    id: newId(),
+    meetingDate: upcomingSunday(),
+    topic: '',
+    clientId: null,
+    projectId: null,
+    background: '',
+    discussed: false,
+    decision: '',
+    convertedTaskId: null,
+    reminderDate: null,
+    reminderTime: null,
+    reminderFiredFor: null,
+    createdAt: new Date().toISOString(),
     ...partial,
   };
 }

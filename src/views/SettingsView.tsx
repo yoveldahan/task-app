@@ -32,8 +32,9 @@ export function SettingsView() {
   const [newPerson, setNewPerson] = useState('');
   const [permission, setPermission] = useState(notificationsSupported() ? Notification.permission : 'unsupported');
 
-  const quickAddExample = `${appBaseUrl()}?quickAdd=${encodeURIComponent('להתקשר לפז מחר ב-10:00')}`;
+  const taskLinkExample = `${appBaseUrl()}?${new URLSearchParams({ task: 'להתקשר בנושא משלוח', client: 'פז', due: 'מחר', time: '10:00', who: 'מתן' })}`;
   const meetingExample = `${appBaseUrl()}?quickAdd=${encodeURIComponent(`${MEETING_PREFIX} זמני אספקה של מתאמים`)}`;
+  const webhookEndpoint = `${window.location.origin}/api/tasks`;
 
   const copy = async (text: string) => {
     try {
@@ -207,14 +208,15 @@ export function SettingsView() {
 
       {/* ---------- Shortcuts ---------- */}
       <section className="card settings-card">
-        <h2>קיצורי דרך, Gemini והזנה מקישור</h2>
+        <h2>הזנה מבחוץ: קישורים, Gemini ו-Webhook</h2>
         <p className="muted">
-          כל קישור עם <code>?quickAdd=</code> מוסיף את הטקסט כאילו הוקלד בתיבת ההזנה המהירה (כולל ניתוב של "{MEETING_PREFIX}").
-          אפשר להגדיר קיצור דרך בטלפון (iOS Shortcuts / Android) שמבקש טקסט ופותח את הקישור, או לבקש מ-Gemini לפתוח קישור כזה.
+          <b>קישור</b> שנפתח בדפדפן מוסיף משימה מיד (או ממלא את תיבת ההזנה עם <code>prefill=1</code>). פרמטרים:{' '}
+          <code>task</code> / <code>topic</code> / <code>quickAdd</code>, ו-<code>client</code>, <code>project</code>,{' '}
+          <code>due</code>, <code>time</code>, <code>who</code>, <code>reason</code>.
         </p>
         <div className="code-row">
-          <code className="code">{quickAddExample}</code>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => copy(quickAddExample)}>
+          <code className="code">{taskLinkExample}</code>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => copy(taskLinkExample)}>
             העתק
           </button>
         </div>
@@ -224,6 +226,12 @@ export function SettingsView() {
             העתק
           </button>
         </div>
+        <p className="muted">
+          <b>Webhook</b> לאוטומציות (Make / Zapier / וואטסאפ / Shortcuts): בקשת <code>POST</code> אל{' '}
+          <code>{webhookEndpoint}</code> עם הכותרת <code>Authorization: Bearer &lt;WEBHOOK_TOKEN&gt;</code> וגוף JSON כמו{' '}
+          <code>{'{"text":"להתקשר לפז מחר ב-10:00","who":"מתן"}'}</code>. המשימה נשמרת בענן ומופיעה מיד בכל המכשירים
+          המחוברים.
+        </p>
         <p className="muted">
           קישורים ישירים למסכים: <code>#clients</code> · <code>#tasks</code> · <code>#meeting</code> · <code>#settings</code>
         </p>

@@ -34,6 +34,16 @@ npm run build      # בנייה ל-dist/ – אתר סטטי שאפשר להעל
 - קישור `?quickAdd=<טקסט>` מוסיף פריט מקיצור דרך בטלפון או מ-Gemini. באנדרואיד, אחרי התקנה למסך הבית,
   אפשר גם "שיתוף" של הודעת וואטסאפ ישירות לאפליקציה.
 
+## הזנה מבחוץ
+
+- **קישור:** `https://yoveltask.netlify.app/?task=להתקשר&client=פז&due=מחר&time=10:00&who=מתן`
+  (גם `topic=` לנושא לישיבה, `project=`, `reason=`, ו-`prefill=1` כדי רק למלא את תיבת ההזנה).
+- **Webhook:** `POST /api/tasks` עם `Authorization: Bearer <WEBHOOK_TOKEN>` וגוף JSON
+  (`text`, `topic`, `client`, `project`, `due`, `time`, `who`, `reason`, `dryRun`). פירוט מלא בראש
+  `netlify/functions/add-task.mts`.
+- משתני סביבה ב-Netlify (scope: Functions): `WEBHOOK_TOKEN`, `SUPABASE_SECRET_KEY`, `SUPABASE_USER_ID`.
+  אחרי שינוי משתנים יש לפרוס מחדש.
+
 ## מבנה
 
 - `src/lib/` – מודל נתונים, store, סנכרון (`sync.ts`, `syncCore.ts`), מפענח, תזכורות, ייצוא.

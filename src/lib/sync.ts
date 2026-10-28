@@ -39,12 +39,13 @@ export type SyncStatus = 'signed-out' | 'syncing' | 'synced' | 'offline' | 'erro
 export interface SyncInfo {
   status: SyncStatus;
   email: string | null;
+  userId: string | null;
   pending: number;
   lastSyncAt: string | null;
   error: string | null;
 }
 
-let info: SyncInfo = { status: 'signed-out', email: null, pending: 0, lastSyncAt: null, error: null };
+let info: SyncInfo = { status: 'signed-out', email: null, userId: null, pending: 0, lastSyncAt: null, error: null };
 const listeners = new Set<() => void>();
 
 function setInfo(patch: Partial<SyncInfo>) {
@@ -337,7 +338,7 @@ function unsubscribe() {
 async function start(session: Session) {
   if (userId === session.user.id) return;
   userId = session.user.id;
-  setInfo({ email: session.user.email ?? null });
+  setInfo({ email: session.user.email ?? null, userId: session.user.id });
   setChangeListener(onLocalChange);
   await pull();
   subscribe(userId);
@@ -347,7 +348,7 @@ function stop() {
   userId = null;
   unsubscribe();
   clearTimeout(flushTimer);
-  setInfo({ email: null, lastSyncAt: null });
+  setInfo({ email: null, userId: null, lastSyncAt: null });
   refreshStatus();
 }
 
