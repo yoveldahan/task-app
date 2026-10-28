@@ -1,0 +1,22 @@
+{
+  "name": "ראס – ניהול משימות ולקוחות",
+  "short_name": "ראס משימות",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0B2545",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": { "title": "shareTitle", "text": "quickAdd", "url": "shareUrl" }
+  },
+  "shortcuts": [
+    { "name": "נושא לישיבה", "url": "./?quickAdd=%D7%A0%D7%95%D7%A9%D7%90%20%D7%9C%D7%99%D7%A9%D7%99%D7%91%D7%94%3A%20#meeting" }
+  ]
+}
