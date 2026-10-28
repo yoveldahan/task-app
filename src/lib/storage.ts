@@ -48,13 +48,32 @@ type DeepPartialData = Partial<Omit<AppData, 'tasks' | 'topics' | 'settings'>> &
   settings?: Partial<Settings>;
 };
 
+/**
+ * Older data had several rows sharing one createdAt (seeded in the same millisecond).
+ * The cloud orders rows by created_at, so make them strictly increasing in array order.
+ */
+function uniqueCreatedAt<T extends { createdAt: string }>(list: T[]): T[] {
+  let prev = -Infinity;
+  return list.map((item) => {
+    const t = Date.parse(item.createdAt);
+    if (Number.isNaN(t) || t > prev) {
+      prev = Number.isNaN(t) ? prev : t;
+      return item;
+    }
+    prev += 1;
+    return { ...item, createdAt: new Date(prev).toISOString() };
+  });
+}
+
 export function normalizeData(input: DeepPartialData): AppData {
   return {
     version: 1,
-    clients: input.clients ?? [],
-    projects: input.projects ?? [],
-    tasks: (input.tasks ?? []).map((t) => ({ reminderFiredFor: null, completedAt: null, ...t }) as Task),
-    topics: (input.topics ?? []).map((t) => ({ reminderFiredFor: null, convertedTaskId: null, ...t }) as MeetingTopic),
+    clients: uniqueCreatedAt(input.clients ?? []),
+    projects: uniqueCreatedAt(input.projects ?? []),
+    tasks: uniqueCreatedAt((input.tasks ?? []).map((t) => ({ reminderFiredFor: null, completedAt: null, ...t }) as Task)),
+    topics: uniqueCreatedAt(
+      (input.topics ?? []).map((t) => ({ reminderFiredFor: null, convertedTaskId: null, ...t }) as MeetingTopic),
+    ),
     people: input.people ?? [],
     settings: {
       meId: 'me',

@@ -19,6 +19,7 @@ import { showToast } from '../lib/toast';
 import { exportClientsCsv, exportJson, exportTasksCsv, exportTopicsCsv, isValidBackup } from '../lib/exporters';
 import { notificationsSupported, requestNotificationPermission } from '../lib/reminders';
 import { postWebhook } from '../lib/storage';
+import { SyncCard } from '../components/SyncCard';
 
 function appBaseUrl(): string {
   return `${window.location.origin}${window.location.pathname}`;
@@ -45,6 +46,8 @@ export function SettingsView() {
 
   return (
     <div className="view settings">
+      <SyncCard />
+
       {/* ---------- Clients ---------- */}
       <section className="card settings-card">
         <h2>לקוחות</h2>
@@ -275,8 +278,8 @@ export function SettingsView() {
       <section className="card settings-card">
         <h2>גיבוי, ייצוא וייבוא</h2>
         <p className="muted">
-          הנתונים נשמרים אוטומטית בדפדפן של המכשיר הזה. כדי להעביר נתונים בין הנייד למחשב, ייצא גיבוי JSON במכשיר אחד וייבא
-          אותו במכשיר השני (או הפעל סנכרון Webhook).
+          הנתונים נשמרים אוטומטית במכשיר (וגם בענן כשמחוברים). גיבוי JSON הוא עותק מלא שאפשר לשמור בצד; ייבוא שלו כשמחוברים
+          לענן מחליף את הנתונים גם בענן ובכל המכשירים.
         </p>
         <div className="button-grid">
           <button type="button" className="btn btn-soft" onClick={() => exportJson(data)}>

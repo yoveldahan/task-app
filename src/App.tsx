@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { QuickCapture } from './components/QuickCapture';
 import { DialogHost, Toasts } from './components/Shell';
+import { SyncBadge } from './components/SyncCard';
 import { ClientsView } from './views/ClientsView';
 import { TasksView } from './views/TasksView';
 import { MeetingView } from './views/MeetingView';
@@ -56,6 +57,7 @@ export function App() {
               <span className="brand-title">ניהול משימות ולקוחות</span>
               <span className="brand-sub">ראס – פתרונות קמעונאות</span>
             </div>
+            <SyncBadge />
           </div>
           <nav className="top-nav" aria-label="ניווט ראשי">
             {VIEWS.map((v) => (

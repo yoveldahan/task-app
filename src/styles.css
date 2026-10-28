@@ -1356,6 +1356,83 @@ code {
   color: var(--red);
 }
 
+/* ---------- Cloud sync ---------- */
+
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sync-badge.sync-error {
+  background: rgb(220 38 38 / 0.35);
+}
+
+.sync-badge.sync-offline {
+  background: rgb(217 119 6 / 0.35);
+}
+
+.sync-pending {
+  background: #fff;
+  color: var(--navy);
+  border-radius: 999px;
+  padding: 0 6px;
+  font-size: 0.68rem;
+}
+
+.sync-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.sync-status.sync-synced {
+  color: var(--green);
+}
+
+.sync-status.sync-error {
+  color: var(--red);
+}
+
+.sync-status.sync-offline {
+  color: var(--amber);
+}
+
+.sync-error {
+  margin: 0;
+  color: var(--red);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.sync-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--blue);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 /* ---------- Toasts & dialog ---------- */
 
 .toasts {
@@ -1484,6 +1561,10 @@ code {
 
   .brand {
     margin: 0;
+  }
+
+  .sync-badge {
+    margin-inline-start: 12px;
   }
 
   .top-nav {

@@ -128,7 +128,11 @@ export function blankTask(partial: Partial<Task> & { stuckWithId: string }): Tas
 }
 
 export function createSeedData(): AppData {
-  const now = new Date().toISOString();
+  // Each seed row gets its own millisecond so the original order survives sorting by created_at.
+  const base = Date.now();
+  let tick = 0;
+  const stamp = () => new Date(base + tick++).toISOString();
+  const now = stamp();
   const clients: Client[] = [];
   const projects: Project[] = [];
   const tasks: Task[] = [];
@@ -140,19 +144,19 @@ export function createSeedData(): AppData {
       category: sc.category,
       status: sc.status,
       statusUpdatedAt: now,
-      createdAt: now,
+      createdAt: stamp(),
     };
     clients.push(client);
 
     for (const sp of sc.projects ?? []) {
-      const project: Project = { id: newId(), clientId: client.id, name: sp.name, closed: false, createdAt: now };
+      const project: Project = { id: newId(), clientId: client.id, name: sp.name, closed: false, createdAt: stamp() };
       projects.push(project);
       for (const st of sp.tasks) {
-        tasks.push(blankTask({ ...st, clientId: client.id, projectId: project.id }));
+        tasks.push(blankTask({ ...st, clientId: client.id, projectId: project.id, createdAt: stamp() }));
       }
     }
     for (const st of sc.tasks ?? []) {
-      tasks.push(blankTask({ ...st, clientId: client.id }));
+      tasks.push(blankTask({ ...st, clientId: client.id, createdAt: stamp() }));
     }
   }
 

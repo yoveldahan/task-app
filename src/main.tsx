@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { quickAdd } from './lib/quickAdd';
 import { registerServiceWorker } from './lib/reminders';
+import { initSync } from './lib/sync';
 import './styles.css';
 
 /**
@@ -20,6 +21,7 @@ function handleUrlQuickAdd() {
   window.history.replaceState(null, '', url.toString());
 }
 
+initSync();
 handleUrlQuickAdd();
 registerServiceWorker();
 

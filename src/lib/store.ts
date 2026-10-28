@@ -14,7 +14,6 @@ let state: AppData = (() => {
 })();
 
 const listeners = new Set<() => void>();
-let saveTimer: ReturnType<typeof setTimeout> | undefined;
 let syncTimer: ReturnType<typeof setTimeout> | undefined;
 
 function emit() {
@@ -22,8 +21,9 @@ function emit() {
 }
 
 function persist() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => adapter.save(state), 150);
+  // Saved synchronously: the sync outbox is persisted immediately too, and the two
+  // must never disagree if the phone kills the app right after an edit.
+  adapter.save(state);
 
   const { webhookUrl, webhookSyncData } = state.settings;
   if (webhookUrl && webhookSyncData) {
@@ -38,10 +38,6 @@ function persist() {
 if (!adapter.load()) adapter.save(state);
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    clearTimeout(saveTimer);
-    adapter.save(state);
-  });
   // Keep multiple open tabs in sync.
   window.addEventListener('storage', (e) => {
     if (e.key === STORAGE_KEY && e.newValue) {
@@ -51,23 +47,43 @@ if (typeof window !== 'undefined') {
   });
 }
 
+type ChangeListener = (prev: AppData, next: AppData) => void;
+let changeListener: ChangeListener | null = null;
+
+/** The cloud sync module registers here to learn about local edits it needs to push. */
+export function setChangeListener(listener: ChangeListener | null) {
+  changeListener = listener;
+}
+
+function commit(next: AppData, notifySync: boolean) {
+  const prev = state;
+  state = next;
+  persist();
+  emit();
+  if (notifySync) changeListener?.(prev, next);
+}
+
 /** Applies a mutation to a deep copy of the state, then saves and notifies. */
 export function update(recipe: (draft: AppData) => void) {
   const draft = structuredClone(state);
   recipe(draft);
-  state = draft;
-  persist();
-  emit();
+  commit(draft, true);
+}
+
+/** Same as update(), for changes that came from the cloud – they must not be pushed back. */
+export function applyRemote(recipe: (draft: AppData) => void) {
+  const draft = structuredClone(state);
+  recipe(draft);
+  commit(draft, false);
 }
 
 export function getState(): AppData {
   return state;
 }
 
+/** Import / reset. When signed in, the difference is synced to the cloud like any edit. */
 export function replaceState(data: AppData) {
-  state = normalizeData(data);
-  persist();
-  emit();
+  commit(normalizeData(data), true);
 }
 
 export function useStore<T>(selector: (s: AppData) => T): T {
