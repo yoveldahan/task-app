@@ -2,7 +2,16 @@ import { useState } from 'react';
 import type { MeetingTopic } from '../lib/types';
 import { MEETING_PREFIX, SUMMARY_EMAIL } from '../lib/constants';
 import { formatHebrewDate, formatShortDate, upcomingSunday } from '../lib/dates';
-import { convertTopicToTask, deleteTopic, setMeetingSummary, update, updateTopic, useData } from '../lib/store';
+import {
+  archiveMeetingSummary,
+  convertTopicToTask,
+  deleteMeetingSummary,
+  deleteTopic,
+  setMeetingSummary,
+  update,
+  updateTopic,
+  useData,
+} from '../lib/store';
 import { postWebhook } from '../lib/storage';
 import { quickAdd } from '../lib/quickAdd';
 import { showToast } from '../lib/toast';
@@ -208,8 +217,11 @@ export function MeetingView() {
   const data = useData();
   const [showDiscussed, setShowDiscussed] = useState(false);
   const [minimized, setMinimized] = useState<Set<string>>(() => new Set());
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [openSummaryId, setOpenSummaryId] = useState<string | null>(null);
   const nextSunday = upcomingSunday();
-  const summaryText = data.summaries.find((s) => s.meetingDate === nextSunday)?.summary ?? '';
+  const summaryText = data.summaries.find((s) => s.meetingDate === nextSunday && !s.archived)?.summary ?? '';
+  const archived = data.summaries.filter((s) => s.archived).sort((a, b) => (a.meetingDate < b.meetingDate ? 1 : -1));
   const allMinimized = data.topics.length > 0 && data.topics.every((t) => minimized.has(t.id));
 
   const setTopicMinimized = (id: string, on: boolean) =>
@@ -240,6 +252,7 @@ export function MeetingView() {
       summary: summaryText.trim(),
       topics,
     });
+    if (ok) archiveMeetingSummary(nextSunday);
     showToast(ok ? 'נשלח בהצלחה' : 'השליחה נכשלה – בדוק את כתובת ה-webhook בהגדרות', {
       kind: ok ? 'success' : 'error',
     });
@@ -378,6 +391,50 @@ export function MeetingView() {
                   minimized={minimized.has(t.id)}
                   onMinimizedChange={(on) => setTopicMinimized(t.id, on)}
                 />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="topic-group archive">
+        <button
+          type="button"
+          className="archive-toggle"
+          aria-expanded={archiveOpen}
+          onClick={() => setArchiveOpen((o) => !o)}
+        >
+          📦 ארכיון סיכומים ({archived.length}) <span>{archiveOpen ? '▾' : '◂'}</span>
+        </button>
+        {archiveOpen && (
+          <div className="task-list">
+            {!archived.length && <p className="empty-note">עדיין אין סיכומים בארכיון</p>}
+            {archived.map((s) => (
+              <div key={s.id} className="card archive-item">
+                <div className="archive-row">
+                  <button
+                    type="button"
+                    className="topic-title"
+                    aria-expanded={openSummaryId === s.id}
+                    onClick={() => setOpenSummaryId(openSummaryId === s.id ? null : s.id)}
+                  >
+                    סיכום ישיבה – {formatHebrewDate(s.meetingDate)}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      deleteMeetingSummary(s.id);
+                      showToast('הסיכום נמחק', {
+                        action: { label: 'בטל', onClick: () => update((d) => void d.summaries.push(s)) },
+                        duration: 6000,
+                      });
+                    }}
+                  >
+                    🗑 מחק
+                  </button>
+                </div>
+                {openSummaryId === s.id && <div className="archive-text">{s.summary}</div>}
               </div>
             ))}
           </div>

@@ -27,7 +27,7 @@ describe('row mapping', () => {
   });
 
   it('round-trips a meeting summary through its table columns', () => {
-    const s = { id: 'sum-1', meetingDate: '2026-11-01', summary: 'סיכום', createdAt: NOW };
+    const s = { id: 'sum-1', meetingDate: '2026-11-01', summary: 'סיכום', archived: false, createdAt: NOW };
     const row = toRow(s, UID, NOW);
     expect(row).toMatchObject({ meeting_date: '2026-11-01', summary: 'סיכום' });
     expect(fromRow<typeof s>(row)).toEqual(s);
@@ -127,7 +127,7 @@ describe('applyRowToDraft (realtime)', () => {
 });
 
 describe('meeting summaries sync', () => {
-  const summary = { id: 'sum-1', meetingDate: '2026-11-01', summary: 'הוחלט לקדם את הלקוח', createdAt: NOW };
+  const summary = { id: 'sum-1', meetingDate: '2026-11-01', summary: 'הוחלט לקדם את הלקוח', archived: false, createdAt: NOW };
 
   it('diffState reports an added or edited summary as a change', () => {
     const base = createSeedData();

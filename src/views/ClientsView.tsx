@@ -8,6 +8,10 @@ import { AutoTextarea } from '../components/fields';
 
 type Filter = 'all' | ClientCategory | 'open';
 
+/** Keys for the general and leads task groups in the minimize state (client ids are never these). */
+const GENERAL_KEY = '__general__';
+const LEADS_KEY = '__leads__';
+
 const FILTERS: { key: Filter; label: string }[] = [
   { key: 'all', label: 'כל הלקוחות' },
   { key: 'big', label: CATEGORY_LABELS.big },
@@ -80,6 +84,15 @@ function ProjectBlock({ project, tasks, showDone }: { project: Project; tasks: T
         />
       )}
     </div>
+  );
+}
+
+/** Small minimize / expand button for a task group heading. */
+function ToggleBlock({ minimized, onChange }: { minimized: boolean; onChange: (minimized: boolean) => void }) {
+  return (
+    <button type="button" className="btn btn-ghost btn-sm" aria-expanded={!minimized} onClick={() => onChange(!minimized)}>
+      {minimized ? '⊞ הרחב' : '⊟ מזער'}
+    </button>
   );
 }
 
@@ -236,21 +249,24 @@ function ClientCard({
 
 export function ClientsView() {
   const data = useData();
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>('open');
   const [showDone, setShowDone] = useState(false);
-  const [minimized, setMinimized] = useState<Set<string>>(() => new Set());
+  // Everything starts minimized; this holds the blocks the user has expanded.
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   const hasOpen = (c: Client) => data.tasks.some((t) => t.clientId === c.id && !t.done);
   const visible = data.clients.filter((c) =>
     filter === 'all' ? true : filter === 'open' ? hasOpen(c) : c.category === filter,
   );
-  const allMinimized = visible.length > 0 && visible.every((c) => minimized.has(c.id));
+  const showGroups = filter === 'all' || filter === 'open';
+  const blockKeys = [...(showGroups ? [GENERAL_KEY, LEADS_KEY] : []), ...visible.map((c) => c.id)];
+  const allMinimized = blockKeys.every((k) => !expanded.has(k));
 
-  const setCardMinimized = (id: string, on: boolean) =>
-    setMinimized((prev) => {
+  const setBlockMinimized = (key: string, on: boolean) =>
+    setExpanded((prev) => {
       const next = new Set(prev);
-      if (on) next.add(id);
-      else next.delete(id);
+      if (on) next.delete(key);
+      else next.add(key);
       return next;
     });
 
@@ -299,8 +315,8 @@ export function ClientsView() {
           <button
             type="button"
             className="btn btn-ghost btn-sm"
-            disabled={!visible.length}
-            onClick={() => setMinimized(allMinimized ? new Set() : new Set(visible.map((c) => c.id)))}
+            disabled={!blockKeys.length}
+            onClick={() => setExpanded(allMinimized ? new Set(blockKeys) : new Set())}
           >
             {allMinimized ? '⊞ הרחב את כל הלקוחות' : '⊟ מזער את כל הלקוחות'}
           </button>
@@ -320,24 +336,31 @@ export function ClientsView() {
         </div>
       </div>
 
-      {filter === 'all' && (
+      {showGroups && (
         <>
           <section className="category-group">
             <h2 className="category-title">
               משימות כלליות <span className="category-count">{generalTasks.filter((t) => !t.done).length}</span>
+              <ToggleBlock
+                minimized={!expanded.has(GENERAL_KEY)}
+                onChange={(on) => setBlockMinimized(GENERAL_KEY, on)}
+              />
             </h2>
-            <TaskGroupCard
-              tasks={generalTasks}
-              showDone={showDone}
-              addPlaceholder="+ משימה כללית (ללא לקוח)"
-              onAdd={(text) => addTask({ description: text })}
-            />
+            {expanded.has(GENERAL_KEY) && (
+              <TaskGroupCard
+                tasks={generalTasks}
+                showDone={showDone}
+                addPlaceholder="+ משימה כללית (ללא לקוח)"
+                onAdd={(text) => addTask({ description: text })}
+              />
+            )}
           </section>
           <section className="category-group">
             <h2 className="category-title cat-title-lead">
               משימות לידים <span className="category-count">{leadTasks.filter((t) => !t.done).length}</span>
+              <ToggleBlock minimized={!expanded.has(LEADS_KEY)} onChange={(on) => setBlockMinimized(LEADS_KEY, on)} />
             </h2>
-            <TaskGroupCard tasks={leadTasks} showDone={showDone} addPlaceholder="" />
+            {expanded.has(LEADS_KEY) && <TaskGroupCard tasks={leadTasks} showDone={showDone} addPlaceholder="" />}
           </section>
         </>
       )}
@@ -355,8 +378,8 @@ export function ClientsView() {
                 key={c.id}
                 client={c}
                 showDone={showDone}
-                minimized={minimized.has(c.id)}
-                onMinimizedChange={(on) => setCardMinimized(c.id, on)}
+                minimized={!expanded.has(c.id)}
+                onMinimizedChange={(on) => setBlockMinimized(c.id, on)}
               />
             ))}
           </section>
