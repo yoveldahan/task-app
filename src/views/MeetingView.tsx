@@ -249,6 +249,8 @@ export function MeetingView() {
       to: SUMMARY_EMAIL,
       subject: `ישיבה שבועית ${dotDate(nextSunday)}`,
       meetingDate: nextSunday,
+      // The email text itself: the summary. The topics travel separately in `topics`.
+      body: summaryText.trim(),
       summary: summaryText.trim(),
       topics,
     });
