@@ -96,25 +96,48 @@ function ToggleBlock({ minimized, onChange }: { minimized: boolean; onChange: (m
   );
 }
 
+/** One task as a single line; clicking it opens the full task. */
+function TaskLine({ task }: { task: Task }) {
+  const [open, setOpen] = useState(false);
+  if (!open) {
+    return (
+      <button type="button" className={`task-line ${task.done ? 'is-done' : ''}`} onClick={() => setOpen(true)}>
+        {task.description.trim() || 'משימה ללא תיאור'}
+      </button>
+    );
+  }
+  return (
+    <div className="task-line-open">
+      <TaskItem task={task} context="master" />
+      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>
+        ⊟ מזער משימה
+      </button>
+    </div>
+  );
+}
+
 /** Tasks that belong to no client (משימות כלליות) or to a lead (לידים), shown above the clients. */
 function TaskGroupCard({
   tasks,
   showDone,
   addPlaceholder,
   onAdd,
+  compact = false,
 }: {
   tasks: Task[];
   showDone: boolean;
   addPlaceholder: string;
   onAdd?: (text: string) => void;
+  /** Show each task as a single line until it is opened. */
+  compact?: boolean;
 }) {
   const visible = showDone ? tasks : tasks.filter((t) => !t.done);
   return (
     <article className="card task-group-card">
       <div className="task-list">
-        {visible.map((t) => (
-          <TaskItem key={t.id} task={t} context="master" />
-        ))}
+        {visible.map((t) =>
+          compact ? <TaskLine key={t.id} task={t} /> : <TaskItem key={t.id} task={t} context="master" />,
+        )}
         {!visible.length && <p className="empty-note">אין משימות פתוחות</p>}
       </div>
       {onAdd && <AddTaskInline placeholder={addPlaceholder} onAdd={onAdd} />}
@@ -251,8 +274,9 @@ export function ClientsView() {
   const data = useData();
   const [filter, setFilter] = useState<Filter>('open');
   const [showDone, setShowDone] = useState(false);
-  // Everything starts minimized; this holds the blocks the user has expanded.
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  // Clients start minimized; the general tasks list starts open, with its tasks as single lines.
+  // This holds the blocks the user has expanded.
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set([GENERAL_KEY]));
 
   const hasOpen = (c: Client) => data.tasks.some((t) => t.clientId === c.id && !t.done);
   const visible = data.clients.filter((c) =>
@@ -352,6 +376,7 @@ export function ClientsView() {
                 showDone={showDone}
                 addPlaceholder="+ משימה כללית (ללא לקוח)"
                 onAdd={(text) => addTask({ description: text })}
+                compact
               />
             )}
           </section>
