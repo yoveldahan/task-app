@@ -74,6 +74,18 @@ create table if not exists public.meeting_topics (
   primary key (user_id, id)
 );
 
+-- The running summary typed during each weekly meeting (one row per meeting date).
+create table if not exists public.meeting_summaries (
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id text not null,
+  meeting_date date not null,
+  summary text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deleted_at timestamptz,
+  primary key (user_id, id)
+);
+
 -- The "אצל מי זה תקוע" list.
 create table if not exists public.people (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
@@ -100,7 +112,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['clients', 'projects', 'tasks', 'meeting_topics', 'people', 'app_settings'] loop
+  foreach t in array array['clients', 'projects', 'tasks', 'meeting_topics', 'meeting_summaries', 'people', 'app_settings'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "owner_all" on public.%I', t);
     execute format(
@@ -118,7 +130,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['clients', 'projects', 'tasks', 'meeting_topics', 'people', 'app_settings'] loop
+  foreach t in array array['clients', 'projects', 'tasks', 'meeting_topics', 'meeting_summaries', 'people', 'app_settings'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t

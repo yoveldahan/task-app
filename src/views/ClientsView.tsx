@@ -83,7 +83,43 @@ function ProjectBlock({ project, tasks, showDone }: { project: Project; tasks: T
   );
 }
 
-function ClientCard({ client, showDone }: { client: Client; showDone: boolean }) {
+/** Tasks that belong to no client (משימות כלליות) or to a lead (לידים), shown above the clients. */
+function TaskGroupCard({
+  tasks,
+  showDone,
+  addPlaceholder,
+  onAdd,
+}: {
+  tasks: Task[];
+  showDone: boolean;
+  addPlaceholder: string;
+  onAdd?: (text: string) => void;
+}) {
+  const visible = showDone ? tasks : tasks.filter((t) => !t.done);
+  return (
+    <article className="card task-group-card">
+      <div className="task-list">
+        {visible.map((t) => (
+          <TaskItem key={t.id} task={t} context="master" />
+        ))}
+        {!visible.length && <p className="empty-note">אין משימות פתוחות</p>}
+      </div>
+      {onAdd && <AddTaskInline placeholder={addPlaceholder} onAdd={onAdd} />}
+    </article>
+  );
+}
+
+function ClientCard({
+  client,
+  showDone,
+  minimized,
+  onMinimizedChange,
+}: {
+  client: Client;
+  showDone: boolean;
+  minimized: boolean;
+  onMinimizedChange: (minimized: boolean) => void;
+}) {
   const data = useData();
   const [collapsed, setCollapsed] = useState(false);
   const tasks = data.tasks.filter((t) => t.clientId === client.id);
@@ -92,6 +128,25 @@ function ClientCard({ client, showDone }: { client: Client; showDone: boolean })
   const visibleRoutine = showDone ? routine : routine.filter((t) => !t.done);
   const openTasks = tasks.filter((t) => !t.done).length;
   const openProjects = projects.filter((p) => !p.closed).length;
+
+  if (minimized) {
+    return (
+      <article className="card client-card client-card-min" id={`client-${client.id}`}>
+        <header className="client-head">
+          <button
+            type="button"
+            className="collapse-btn"
+            aria-expanded={false}
+            aria-label="הרחב את הלקוח"
+            onClick={() => onMinimizedChange(false)}
+          >
+            ◂
+          </button>
+          <h2 className="client-name">{client.name}</h2>
+        </header>
+      </article>
+    );
+  }
 
   return (
     <article className={`card client-card cat-${client.category}`} id={`client-${client.id}`}>
@@ -111,6 +166,15 @@ function ClientCard({ client, showDone }: { client: Client; showDone: boolean })
           <span className={`count ${openTasks ? '' : 'count-zero'}`}>{openTasks} משימות פתוחות</span>
           <span className={`count ${openProjects ? '' : 'count-zero'}`}>{openProjects} פרויקטים</span>
         </div>
+        <button
+          type="button"
+          className="icon-btn"
+          title="מזער לשם הלקוח בלבד"
+          aria-label="מזער לשם הלקוח בלבד"
+          onClick={() => onMinimizedChange(true)}
+        >
+          ⊟
+        </button>
       </header>
 
       <div className="status-box">
@@ -174,11 +238,25 @@ export function ClientsView() {
   const data = useData();
   const [filter, setFilter] = useState<Filter>('all');
   const [showDone, setShowDone] = useState(false);
+  const [minimized, setMinimized] = useState<Set<string>>(() => new Set());
 
   const hasOpen = (c: Client) => data.tasks.some((t) => t.clientId === c.id && !t.done);
   const visible = data.clients.filter((c) =>
     filter === 'all' ? true : filter === 'open' ? hasOpen(c) : c.category === filter,
   );
+  const allMinimized = visible.length > 0 && visible.every((c) => minimized.has(c.id));
+
+  const setCardMinimized = (id: string, on: boolean) =>
+    setMinimized((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+  const categoryOf = (taskClientId: string | null) => data.clients.find((c) => c.id === taskClientId)?.category;
+  const generalTasks = data.tasks.filter((t) => !t.clientId);
+  const leadTasks = data.tasks.filter((t) => !t.projectId && categoryOf(t.clientId) === 'lead');
 
   const jumpTo = (id: string) => {
     if (!id) return;
@@ -221,6 +299,14 @@ export function ClientsView() {
           <button
             type="button"
             className="btn btn-ghost btn-sm"
+            disabled={!visible.length}
+            onClick={() => setMinimized(allMinimized ? new Set() : new Set(visible.map((c) => c.id)))}
+          >
+            {allMinimized ? '⊞ הרחב את כל הלקוחות' : '⊟ מזער את כל הלקוחות'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
             onClick={async () => {
               const name = await askText('שם הלקוח / הליד החדש');
               if (!name) return;
@@ -234,6 +320,28 @@ export function ClientsView() {
         </div>
       </div>
 
+      {filter === 'all' && (
+        <>
+          <section className="category-group">
+            <h2 className="category-title">
+              משימות כלליות <span className="category-count">{generalTasks.filter((t) => !t.done).length}</span>
+            </h2>
+            <TaskGroupCard
+              tasks={generalTasks}
+              showDone={showDone}
+              addPlaceholder="+ משימה כללית (ללא לקוח)"
+              onAdd={(text) => addTask({ description: text })}
+            />
+          </section>
+          <section className="category-group">
+            <h2 className="category-title cat-title-lead">
+              משימות לידים <span className="category-count">{leadTasks.filter((t) => !t.done).length}</span>
+            </h2>
+            <TaskGroupCard tasks={leadTasks} showDone={showDone} addPlaceholder="" />
+          </section>
+        </>
+      )}
+
       {CATEGORIES.map((cat) => {
         const list = visible.filter((c) => c.category === cat);
         if (!list.length) return null;
@@ -243,7 +351,13 @@ export function ClientsView() {
               {CATEGORY_LABELS[cat]} <span className="category-count">{list.length}</span>
             </h2>
             {list.map((c) => (
-              <ClientCard key={c.id} client={c} showDone={showDone} />
+              <ClientCard
+                key={c.id}
+                client={c}
+                showDone={showDone}
+                minimized={minimized.has(c.id)}
+                onMinimizedChange={(on) => setCardMinimized(c.id, on)}
+              />
             ))}
           </section>
         );

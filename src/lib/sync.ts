@@ -227,16 +227,17 @@ async function fetchAll(table: TableName, uid: string): Promise<Row[]> {
 }
 
 async function fetchSnapshot(uid: string): Promise<Snapshot> {
-  const [clients, projects, tasks, meeting_topics, people, settings] = await Promise.all([
+  const [clients, projects, tasks, meeting_topics, meeting_summaries, people, settings] = await Promise.all([
     fetchAll('clients', uid),
     fetchAll('projects', uid),
     fetchAll('tasks', uid),
     fetchAll('meeting_topics', uid),
+    fetchAll('meeting_summaries', uid),
     fetchAll('people', uid),
     supabase.from(SETTINGS_TABLE).select('*').eq('user_id', uid).maybeSingle(),
   ]);
   if (settings.error) throw settings.error;
-  return { clients, projects, tasks, meeting_topics, people, settings: settings.data as Row | null };
+  return { clients, projects, tasks, meeting_topics, meeting_summaries, people, settings: settings.data as Row | null };
 }
 
 function markAllPending(state: AppData) {

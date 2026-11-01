@@ -55,6 +55,14 @@ export interface MeetingTopic extends Reminder {
   createdAt: string;
 }
 
+/** Running summary typed during a weekly meeting – one per meeting date. */
+export interface MeetingSummary {
+  id: string;
+  meetingDate: string; // YYYY-MM-DD
+  summary: string;
+  createdAt: string;
+}
+
 export interface Person {
   id: string;
   name: string;
@@ -74,6 +82,7 @@ export interface AppData {
   projects: Project[];
   tasks: Task[];
   topics: MeetingTopic[];
+  summaries: MeetingSummary[];
   people: Person[];
   settings: Settings;
 }

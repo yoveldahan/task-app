@@ -22,4 +22,6 @@ export const REMINDER_TIMES: string[] = Array.from({ length: 25 }, (_, i) => {
 });
 
 export const MEETING_PREFIX = 'נושא לישיבה:';
+/** Where the weekly meeting summary is e-mailed (via the webhook automation). */
+export const SUMMARY_EMAIL = 'yovel@ras.land';
 export const STORAGE_KEY = 'ras-task-manager-v1';

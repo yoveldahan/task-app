@@ -12,6 +12,7 @@ function snapshotOf(data: AppData): Snapshot {
     projects: data.projects.map((e) => toRow(e, UID, NOW)),
     tasks: data.tasks.map((e) => toRow(e, UID, NOW)),
     meeting_topics: data.topics.map((e) => toRow(e, UID, NOW)),
+    meeting_summaries: data.summaries.map((e) => toRow(e, UID, NOW)),
     people: data.people.map((e, i) => toRow(e, UID, NOW, i)),
     settings: { user_id: UID, me_id: 'me', webhook_url: '', webhook_sync_data: false, webhook_send_reminders: false },
   };
@@ -23,6 +24,13 @@ describe('row mapping', () => {
     const row = toRow(task, UID, NOW);
     expect(row).toMatchObject({ user_id: UID, stuck_with_id: task.stuckWithId, reminder_fired_for: null, deleted_at: null });
     expect(fromRow<Task>(row)).toEqual(task);
+  });
+
+  it('round-trips a meeting summary through its table columns', () => {
+    const s = { id: 'sum-1', meetingDate: '2026-11-01', summary: 'סיכום', createdAt: NOW };
+    const row = toRow(s, UID, NOW);
+    expect(row).toMatchObject({ meeting_date: '2026-11-01', summary: 'סיכום' });
+    expect(fromRow<typeof s>(row)).toEqual(s);
   });
 
   it('normalises Postgres timestamp format so createdAt sorts as a string', () => {
@@ -90,7 +98,9 @@ describe('reconcile', () => {
   });
 
   it('empty snapshot detection', () => {
-    expect(snapshotIsEmpty({ clients: [], projects: [], tasks: [], meeting_topics: [], people: [], settings: null })).toBe(true);
+    expect(
+      snapshotIsEmpty({ clients: [], projects: [], tasks: [], meeting_topics: [], meeting_summaries: [], people: [], settings: null }),
+    ).toBe(true);
     expect(snapshotIsEmpty(snapshotOf(createSeedData()))).toBe(false);
   });
 });
@@ -113,5 +123,31 @@ describe('applyRowToDraft (realtime)', () => {
     const d = createSeedData();
     applyRowToDraft(d, 'people', toRow({ id: 'new', name: 'דני' }, UID, NOW, 1));
     expect(d.people[1].id).toBe('new');
+  });
+});
+
+describe('meeting summaries sync', () => {
+  const summary = { id: 'sum-1', meetingDate: '2026-11-01', summary: 'הוחלט לקדם את הלקוח', createdAt: NOW };
+
+  it('diffState reports an added or edited summary as a change', () => {
+    const base = createSeedData();
+    const next = { ...base, summaries: [summary] };
+    expect(diffState(base, next)).toContain('meeting_summaries:sum-1');
+    const edited = { ...next, summaries: [{ ...summary, summary: 'עודכן' }] };
+    expect(diffState(next, edited)).toEqual(['meeting_summaries:sum-1']);
+  });
+
+  it('reconcile pulls a cloud summary when there is no pending local change', () => {
+    const local = createSeedData();
+    const snap = { ...snapshotOf(local), meeting_summaries: [toRow(summary, UID, NOW)] };
+    const next = reconcile(local, snap, new Set());
+    expect(next.summaries).toEqual([summary]);
+  });
+
+  it('reconcile keeps a local summary that has an unpushed edit', () => {
+    const local = { ...createSeedData(), summaries: [{ ...summary, summary: 'מקומי' }] };
+    const snap = { ...snapshotOf(createSeedData()), meeting_summaries: [toRow(summary, UID, NOW)] };
+    const next = reconcile(local, snap, new Set(['meeting_summaries:sum-1']));
+    expect(next.summaries[0].summary).toBe('מקומי');
   });
 });

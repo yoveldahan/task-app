@@ -186,6 +186,7 @@ export function createSeedData(): AppData {
     projects,
     tasks,
     topics: [],
+    summaries: [],
     people: SEED_PEOPLE.map((p) => ({ ...p })),
     settings: { meId: 'me', webhookUrl: '', webhookSyncData: false, webhookSendReminders: false },
   };

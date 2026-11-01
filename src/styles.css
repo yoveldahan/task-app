@@ -1210,6 +1210,58 @@ code {
   margin-inline-start: auto;
 }
 
+.meeting-copy + .meeting-copy {
+  margin-inline-start: 0;
+}
+
+.meeting-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 4px solid var(--amber);
+}
+
+.meeting-summary-input {
+  min-height: 120px;
+}
+
+.meeting-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.task-group-card {
+  overflow: hidden;
+  border-top: 4px solid var(--muted);
+}
+
+.client-card-min {
+  border-top-color: var(--navy);
+}
+
+.client-card-min .client-head {
+  padding: 10px 12px;
+}
+
+.topic-title {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 6px;
+  text-align: start;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.topic-item-min .topic-title:hover {
+  text-decoration: underline;
+}
+
 .topic-group {
   display: flex;
   flex-direction: column;

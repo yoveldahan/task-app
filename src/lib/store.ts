@@ -214,6 +214,17 @@ export function deleteTopic(id: string) {
   });
 }
 
+// ---------- Meeting summaries ----------
+
+/** Saves the running summary of the meeting on `meetingDate`, creating its row on first edit. */
+export function setMeetingSummary(meetingDate: string, summary: string) {
+  update((d) => {
+    const row = d.summaries.find((s) => s.meetingDate === meetingDate);
+    if (row) row.summary = summary;
+    else d.summaries.push({ id: newId(), meetingDate, summary, createdAt: new Date().toISOString() });
+  });
+}
+
 /** "הפוך למשימה" – turns the meeting decision into a new task under the related client. */
 export function convertTopicToTask(topicId: string): Task | null {
   const topic = state.topics.find((t) => t.id === topicId);

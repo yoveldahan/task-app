@@ -1,18 +1,50 @@
 import { useState } from 'react';
 import type { MeetingTopic } from '../lib/types';
-import { MEETING_PREFIX } from '../lib/constants';
+import { MEETING_PREFIX, SUMMARY_EMAIL } from '../lib/constants';
 import { formatHebrewDate, formatShortDate, upcomingSunday } from '../lib/dates';
-import { convertTopicToTask, deleteTopic, update, updateTopic, useData } from '../lib/store';
+import { convertTopicToTask, deleteTopic, setMeetingSummary, update, updateTopic, useData } from '../lib/store';
+import { postWebhook } from '../lib/storage';
 import { quickAdd } from '../lib/quickAdd';
 import { showToast } from '../lib/toast';
 import { AutoTextarea, Field, PersonSelect, ReminderField } from '../components/fields';
 import { AddTaskInline } from '../components/TaskItem';
 
-function TopicItem({ topic, nextSunday }: { topic: MeetingTopic; nextSunday: string }) {
+function TopicItem({
+  topic,
+  nextSunday,
+  minimized,
+  onMinimizedChange,
+}: {
+  topic: MeetingTopic;
+  nextSunday: string;
+  minimized: boolean;
+  onMinimizedChange: (minimized: boolean) => void;
+}) {
   const data = useData();
   const set = (patch: Partial<MeetingTopic>) => updateTopic(topic.id, patch);
   const projects = data.projects.filter((p) => p.clientId === topic.clientId && (!p.closed || p.id === topic.projectId));
   const carriedOver = !topic.discussed && topic.meetingDate < nextSunday;
+
+  if (minimized) {
+    return (
+      <div className={`task-item topic-item topic-item-min ${topic.discussed ? 'is-done' : ''}`}>
+        <div className="task-main-row">
+          <label className="check" title="נדון בישיבה">
+            <input type="checkbox" checked={topic.discussed} onChange={(e) => set({ discussed: e.target.checked })} />
+            <span className="check-box" aria-hidden />
+          </label>
+          <button
+            type="button"
+            className="topic-title"
+            title="הרחב נושא"
+            onClick={() => onMinimizedChange(false)}
+          >
+            {topic.topic.trim() || 'נושא ללא כותרת'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`task-item topic-item ${topic.discussed ? 'is-done' : ''}`}>
@@ -28,6 +60,15 @@ function TopicItem({ topic, nextSunday }: { topic: MeetingTopic; nextSunday: str
           aria-label="נושא לישיבה"
           onChange={(v) => set({ topic: v })}
         />
+        <button
+          type="button"
+          className="icon-btn"
+          title="מזער לנושא בלבד"
+          aria-label="מזער לנושא בלבד"
+          onClick={() => onMinimizedChange(true)}
+        >
+          ⊟
+        </button>
         <button
           type="button"
           className="icon-btn danger"
@@ -157,10 +198,41 @@ function agendaText(topics: MeetingTopic[], date: string, clientName: (id: strin
   return lines.join('\n');
 }
 
+/** dd.mm.yyyy for the email subject. */
+function dotDate(iso: string) {
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
 export function MeetingView() {
   const data = useData();
   const [showDiscussed, setShowDiscussed] = useState(false);
+  const [minimized, setMinimized] = useState<Set<string>>(() => new Set());
   const nextSunday = upcomingSunday();
+  const summaryText = data.summaries.find((s) => s.meetingDate === nextSunday)?.summary ?? '';
+  const allMinimized = data.topics.length > 0 && data.topics.every((t) => minimized.has(t.id));
+
+  const setTopicMinimized = (id: string, on: boolean) =>
+    setMinimized((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+  const sendSummary = async () => {
+    const ok = await postWebhook(data.settings.webhookUrl, {
+      event: 'meeting-summary-email',
+      sentAt: new Date().toISOString(),
+      to: SUMMARY_EMAIL,
+      subject: `ישיבה שבועית ${dotDate(nextSunday)}`,
+      meetingDate: nextSunday,
+      body: summaryText.trim(),
+    });
+    showToast(ok ? `הסיכום נשלח לאוטומציה למייל ${SUMMARY_EMAIL}` : 'השליחה נכשלה – בדוק את כתובת ה-webhook בהגדרות', {
+      kind: ok ? 'success' : 'error',
+    });
+  };
 
   const open = data.topics.filter((t) => !t.discussed);
   const upcoming = open.filter((t) => t.meetingDate >= nextSunday).sort((a, b) => (a.meetingDate < b.meetingDate ? -1 : 1));
@@ -198,7 +270,42 @@ export function MeetingView() {
         >
           📋 העתק סדר יום
         </button>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm meeting-copy"
+          disabled={!data.topics.length}
+          onClick={() => setMinimized(allMinimized ? new Set() : new Set(data.topics.map((t) => t.id)))}
+        >
+          {allMinimized ? '⊞ הרחב את כל הנושאים' : '⊟ מזער את כל הנושאים'}
+        </button>
       </div>
+
+      <section className="card meeting-summary">
+        <div className="section-head">
+          <h3>📝 סיכום הישיבה השבועית</h3>
+          <span className="status-updated">נשמר אוטומטית</span>
+        </div>
+        <AutoTextarea
+          className="input meeting-summary-input"
+          value={summaryText}
+          placeholder="הקלד כאן את הסיכום תוך כדי הישיבה…"
+          aria-label="סיכום הישיבה השבועית"
+          onChange={(v) => setMeetingSummary(nextSunday, v)}
+        />
+        <div className="meeting-summary-actions">
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            disabled={!summaryText.trim() || !data.settings.webhookUrl}
+            onClick={sendSummary}
+          >
+            ✉️ שלח את הסיכום למייל
+          </button>
+          {!data.settings.webhookUrl && (
+            <span className="status-updated">כדי לשלוח: הגדר כתובת webhook בהגדרות (סנכרון ענן ואוטומציות)</span>
+          )}
+        </div>
+      </section>
 
       <AddTaskInline
         placeholder="+ נושא חדש לישיבה (לקוח ואיש צוות מזוהים אוטומטית)"
@@ -210,7 +317,13 @@ export function MeetingView() {
           <h3 className="group-title warn">נושאים שלא נדונו מישיבות קודמות ({carried.length})</h3>
           <div className="task-list">
             {carried.map((t) => (
-              <TopicItem key={t.id} topic={t} nextSunday={nextSunday} />
+              <TopicItem
+                key={t.id}
+                topic={t}
+                nextSunday={nextSunday}
+                minimized={minimized.has(t.id)}
+                onMinimizedChange={(on) => setTopicMinimized(t.id, on)}
+              />
             ))}
           </div>
         </section>
@@ -220,7 +333,13 @@ export function MeetingView() {
         <h3 className="group-title">לישיבה הקרובה ({upcoming.length})</h3>
         <div className="task-list">
           {upcoming.map((t) => (
-            <TopicItem key={t.id} topic={t} nextSunday={nextSunday} />
+            <TopicItem
+              key={t.id}
+              topic={t}
+              nextSunday={nextSunday}
+              minimized={minimized.has(t.id)}
+              onMinimizedChange={(on) => setTopicMinimized(t.id, on)}
+            />
           ))}
           {!upcoming.length && (
             <p className="empty-state">
@@ -242,7 +361,12 @@ export function MeetingView() {
                 {(i === 0 || discussed[i - 1].meetingDate !== t.meetingDate) && (
                   <div className="date-divider">ישיבת {formatShortDate(t.meetingDate)}</div>
                 )}
-                <TopicItem topic={t} nextSunday={nextSunday} />
+                <TopicItem
+                  topic={t}
+                  nextSunday={nextSunday}
+                  minimized={minimized.has(t.id)}
+                  onMinimizedChange={(on) => setTopicMinimized(t.id, on)}
+                />
               </div>
             ))}
           </div>

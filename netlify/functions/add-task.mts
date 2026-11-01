@@ -151,6 +151,7 @@ export default async (req: Request): Promise<Response> => {
         .map((r) => fromRow<Person>(r)),
       tasks: [],
       topics: [],
+      summaries: [],
       settings: settings.data
         ? settingsFromRow(settings.data as Row)
         : { meId: 'me', webhookUrl: '', webhookSyncData: false, webhookSendReminders: false },

@@ -74,6 +74,7 @@ export function normalizeData(input: DeepPartialData): AppData {
     topics: uniqueCreatedAt(
       (input.topics ?? []).map((t) => ({ reminderFiredFor: null, convertedTaskId: null, ...t }) as MeetingTopic),
     ),
+    summaries: uniqueCreatedAt(input.summaries ?? []),
     people: input.people ?? [],
     settings: {
       meId: 'me',

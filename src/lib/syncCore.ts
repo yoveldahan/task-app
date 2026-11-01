@@ -2,22 +2,23 @@
  * Pure helpers for cloud sync (no network): row mapping, change detection and
  * merging a cloud snapshot with local data. Kept free of side effects for testing.
  */
-import type { AppData, Client, MeetingTopic, Person, Project, Settings, Task } from './types';
+import type { AppData, Client, MeetingSummary, MeetingTopic, Person, Project, Settings, Task } from './types';
 
-export type TableName = 'clients' | 'projects' | 'tasks' | 'meeting_topics' | 'people';
-export type CollectionKey = 'clients' | 'projects' | 'tasks' | 'topics' | 'people';
+export type TableName = 'clients' | 'projects' | 'tasks' | 'meeting_topics' | 'meeting_summaries' | 'people';
+export type CollectionKey = 'clients' | 'projects' | 'tasks' | 'topics' | 'summaries' | 'people';
 
 export const TABLES: { table: TableName; key: CollectionKey }[] = [
   { table: 'clients', key: 'clients' },
   { table: 'projects', key: 'projects' },
   { table: 'tasks', key: 'tasks' },
   { table: 'meeting_topics', key: 'topics' },
+  { table: 'meeting_summaries', key: 'summaries' },
   { table: 'people', key: 'people' },
 ];
 
 export const SETTINGS_TABLE = 'app_settings';
 
-type Entity = Client | Project | Task | MeetingTopic | Person;
+type Entity = Client | Project | Task | MeetingTopic | MeetingSummary | Person;
 export type Row = Record<string, unknown>;
 
 /** Pending local change: the table row id, or 'settings'. */
@@ -94,6 +95,7 @@ export interface Snapshot {
   projects: Row[];
   tasks: Row[];
   meeting_topics: Row[];
+  meeting_summaries: Row[];
   people: Row[];
   settings: Row | null;
 }
