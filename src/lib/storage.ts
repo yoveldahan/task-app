@@ -29,9 +29,11 @@ export const localStorageAdapter: StorageAdapter = {
 export async function postWebhook(url: string, payload: unknown): Promise<boolean> {
   if (!url) return false;
   try {
-    // text/plain avoids a CORS preflight, which Apps Script web apps don't answer.
+    // text/plain + no-cors avoid a CORS preflight, which Apps Script web apps don't answer.
+    // With no-cors the response is opaque (ok is always false), so only a thrown error counts as failure.
     await fetch(url, {
       method: 'POST',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
