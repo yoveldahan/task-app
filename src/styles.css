@@ -1262,6 +1262,40 @@ code {
   text-decoration: underline;
 }
 
+.task-line {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--navy-soft);
+  background: transparent;
+  padding: 10px 12px;
+  text-align: start;
+  font-size: 1rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.task-line:hover {
+  background: var(--navy-soft);
+}
+
+.task-line.is-done {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.task-line-open {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 0 6px;
+}
+
+.task-line-open .btn {
+  align-self: flex-start;
+  margin-inline: 12px;
+}
+
 .archive-toggle {
   align-self: flex-start;
   border: 0;
