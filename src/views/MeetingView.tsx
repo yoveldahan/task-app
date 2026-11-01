@@ -221,15 +221,26 @@ export function MeetingView() {
     });
 
   const sendSummary = async () => {
+    const topics = data.topics
+      .filter((t) => !t.discussed)
+      .sort((a, b) => (a.meetingDate < b.meetingDate ? -1 : 1))
+      .map((t) => ({
+        topic: t.topic.trim(),
+        client: data.clients.find((c) => c.id === t.clientId)?.name ?? 'כללי / חברה',
+        withWhom: data.people.find((p) => p.id === t.withWhomId)?.name ?? '',
+        background: t.background.trim(),
+        decision: t.decision.trim(),
+      }));
     const ok = await postWebhook(data.settings.webhookUrl, {
-      event: 'meeting-summary-email',
+      event: 'send-summary',
       sentAt: new Date().toISOString(),
       to: SUMMARY_EMAIL,
       subject: `ישיבה שבועית ${dotDate(nextSunday)}`,
       meetingDate: nextSunday,
-      body: summaryText.trim(),
+      summary: summaryText.trim(),
+      topics,
     });
-    showToast(ok ? `הסיכום נשלח לאוטומציה למייל ${SUMMARY_EMAIL}` : 'השליחה נכשלה – בדוק את כתובת ה-webhook בהגדרות', {
+    showToast(ok ? 'נשלח בהצלחה' : 'השליחה נכשלה – בדוק את כתובת ה-webhook בהגדרות', {
       kind: ok ? 'success' : 'error',
     });
   };
