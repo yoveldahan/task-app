@@ -1,4 +1,4 @@
-import type { AppData, MeetingTopic, Settings, Task } from './types';
+import type { AppData, MeetingSummary, MeetingTopic, Settings, Task } from './types';
 import { STORAGE_KEY } from './constants';
 
 /**
@@ -44,9 +44,10 @@ export async function postWebhook(url: string, payload: unknown): Promise<boolea
 }
 
 /** Fills fields added in later versions so older backups/imports keep working. */
-type DeepPartialData = Partial<Omit<AppData, 'tasks' | 'topics' | 'settings'>> & {
+type DeepPartialData = Partial<Omit<AppData, 'tasks' | 'topics' | 'summaries' | 'settings'>> & {
   tasks?: Partial<Task>[];
   topics?: Partial<MeetingTopic>[];
+  summaries?: Partial<MeetingSummary>[];
   settings?: Partial<Settings>;
 };
 
@@ -76,7 +77,7 @@ export function normalizeData(input: DeepPartialData): AppData {
     topics: uniqueCreatedAt(
       (input.topics ?? []).map((t) => ({ reminderFiredFor: null, convertedTaskId: null, ...t }) as MeetingTopic),
     ),
-    summaries: uniqueCreatedAt(input.summaries ?? []),
+    summaries: uniqueCreatedAt((input.summaries ?? []).map((s) => ({ archived: false, ...s }) as MeetingSummary)),
     people: input.people ?? [],
     settings: {
       meId: 'me',

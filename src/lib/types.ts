@@ -60,6 +60,8 @@ export interface MeetingSummary {
   id: string;
   meetingDate: string; // YYYY-MM-DD
   summary: string;
+  /** true once the summary was sent; archived summaries are read-only history. */
+  archived: boolean;
   createdAt: string;
 }
 

@@ -80,11 +80,15 @@ create table if not exists public.meeting_summaries (
   id text not null,
   meeting_date date not null,
   summary text not null default '',
+  archived boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,
   primary key (user_id, id)
 );
+
+-- Tables created before the archive existed: add the column (safe to re-run).
+alter table public.meeting_summaries add column if not exists archived boolean not null default false;
 
 -- The "אצל מי זה תקוע" list.
 create table if not exists public.people (

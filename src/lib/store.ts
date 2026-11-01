@@ -219,9 +219,23 @@ export function deleteTopic(id: string) {
 /** Saves the running summary of the meeting on `meetingDate`, creating its row on first edit. */
 export function setMeetingSummary(meetingDate: string, summary: string) {
   update((d) => {
-    const row = d.summaries.find((s) => s.meetingDate === meetingDate);
+    const row = d.summaries.find((s) => s.meetingDate === meetingDate && !s.archived);
     if (row) row.summary = summary;
-    else d.summaries.push({ id: newId(), meetingDate, summary, createdAt: new Date().toISOString() });
+    else d.summaries.push({ id: newId(), meetingDate, summary, archived: false, createdAt: new Date().toISOString() });
+  });
+}
+
+/** After a sent summary: moves it to the archive, so the next edit for that meeting starts a fresh box. */
+export function archiveMeetingSummary(meetingDate: string) {
+  update((d) => {
+    const row = d.summaries.find((s) => s.meetingDate === meetingDate && !s.archived);
+    if (row) row.archived = true;
+  });
+}
+
+export function deleteMeetingSummary(id: string) {
+  update((d) => {
+    d.summaries = d.summaries.filter((s) => s.id !== id);
   });
 }
 

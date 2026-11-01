@@ -1262,6 +1262,37 @@ code {
   text-decoration: underline;
 }
 
+.archive-toggle {
+  align-self: flex-start;
+  border: 0;
+  background: var(--navy-soft);
+  color: var(--navy);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-weight: 700;
+}
+
+.archive-item {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.archive-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.archive-text {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
 .topic-group {
   display: flex;
   flex-direction: column;
