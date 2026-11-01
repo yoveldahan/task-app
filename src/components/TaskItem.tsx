@@ -52,7 +52,10 @@ export function TaskItem({ task, context }: { task: Task; context: 'client' | 'p
   const set = (patch: Partial<Task>) => updateTask(task.id, patch);
 
   return (
-    <div className={`task-item ${task.done ? 'is-done' : ''} ${task.stuckWithId !== data.settings.meId ? 'is-delegated' : ''}`}>
+    <div
+      className={`task-item ${task.done ? 'is-done' : ''} ${task.stuckWithId !== data.settings.meId ? 'is-delegated' : ''}`}
+      data-task-id={task.id}
+    >
       {context === 'master' && (
         <div className="task-meta-row">
           <select

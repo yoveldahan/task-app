@@ -1,0 +1,16 @@
+# Signing material: never commit (see README)
+keystore/
+keystore.properties
+keystore-password.txt
+*.jks
+*.keystore
+
+# Local SDK path and build output
+local.properties
+.gradle/
+build/
+app/build/
+*.apk
+
+# Kotlin compiler caches
+.kotlin/

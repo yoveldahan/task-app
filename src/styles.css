@@ -936,6 +936,13 @@ code {
   background: #fbfdfb;
 }
 
+/* Highlights a task opened from the Android widget or a reminder (see App.tsx). */
+.task-highlight {
+  box-shadow: 0 0 0 3px var(--teal);
+  border-radius: 12px;
+  transition: box-shadow 0.4s ease;
+}
+
 .task-item.is-done .task-desc {
   text-decoration: line-through;
   color: var(--muted);

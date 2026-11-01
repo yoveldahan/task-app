@@ -39,6 +39,31 @@ export function App() {
 
   useEffect(() => startReminderLoop(), []);
 
+  // Opened from the Android app (widget or reminder): ?openTask=<id> shows that task in the tasks view.
+  // Not "task=": that parameter already adds a task from a link (see lib/urlIntake.ts).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const taskId = params.get('openTask');
+    if (!taskId) return;
+    params.delete('openTask');
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}#tasks`);
+    setView('tasks');
+    let attempts = 0;
+    const reveal = () => {
+      const el = document.querySelector<HTMLElement>(`[data-task-id="${CSS.escape(taskId)}"]`);
+      if (!el) {
+        // The list renders after this effect; retry briefly, then give up quietly (e.g. the task is done or filtered out).
+        if (++attempts < 30) window.setTimeout(reveal, 100);
+        return;
+      }
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('task-highlight');
+      window.setTimeout(() => el.classList.remove('task-highlight'), 2500);
+    };
+    window.setTimeout(reveal, 50);
+  }, []);
+
   const t0 = today();
   const badges: Record<ViewKey, number> = {
     clients: 0,
